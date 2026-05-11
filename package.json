@@ -1,16 +1,11 @@
 {
   "name": "radio-saas",
   "version": "1.0.0",
-  "type": "module",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "node-fetch": "^3.3.2",
-    "@supabase/supabase-js": "^2.39.0",
-    "stripe": "^14.0.0",
-    "dotenv": "^16.0.3"
+    "express": "^4.18.2"
   }
 }

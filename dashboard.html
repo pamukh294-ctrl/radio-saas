@@ -1,118 +1,99 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>SAAS DASHBOARD</title>
+<title>Radio SaaS Live</title>
 
 <style>
-body{
-  margin:0;
-  background:#0d0d0d;
-  color:#fff;
-  font-family:Arial;
+body {
+    margin: 0;
+    font-family: Arial;
+    background: #0b0b0b;
+    color: white;
 }
 
-.header{
-  padding:18px;
-  text-align:center;
-  background:#111;
-  font-weight:bold;
+header {
+    padding: 18px;
+    text-align: center;
+    background: #111;
+    font-size: 20px;
+    font-weight: bold;
 }
 
-.container{
-  max-width:900px;
-  margin:20px auto;
+.container {
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
 }
 
-.card{
-  background:#1c1c1c;
-  margin:10px 0;
-  padding:14px;
-  border-radius:8px;
-  border-left:6px solid #555;
+.card {
+    background: #161616;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.ok{border-color:#00ff6a}
-.slow{border-color:#ffb300}
-.broken{border-color:#ff3b3b}
+.ok { color: #00ff88; }
+.broken { color: #ff4d4d; }
+.null { color: #999; }
 
-.meta{
-  font-size:13px;
-  color:#aaa;
-  margin-top:6px;
-}
-
-.bar{
-  height:6px;
-  background:#333;
-  margin-top:10px;
-  border-radius:4px;
-  overflow:hidden;
-}
-
-.fill{
-  height:6px;
-  background:#00ff6a;
+.badge {
+    background: #222;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    margin-top: 5px;
+    display: inline-block;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">📡 RADIO SAAS DASHBOARD</div>
+<header>📡 RADIO SAAS LIVE</header>
 
-<div class="container" id="app"></div>
+<div class="container" id="list"></div>
 
 <script>
+const API = "/api";
 
-const API = "http://localhost:3000/api";
-const TOKEN = "secret123";
+async function load() {
+    const res = await fetch(API);
+    const data = await res.json();
 
-async function load(){
+    const list = document.getElementById("list");
+    list.innerHTML = "";
 
-  const res = await fetch(API,{
-    headers:{
-      "x-token": TOKEN
-    }
-  });
+    data.forEach(r => {
 
-  if(res.status === 401){
-    document.getElementById("app").innerHTML = "❌ Unauthorized (token wrong)";
-    return;
-  }
+        let cls = "null";
+        if (r.stream_status === "ok") cls = "ok";
+        if (r.stream_status === "broken") cls = "broken";
 
-  const data = await res.json();
+        const div = document.createElement("div");
+        div.className = "card";
 
-  const app = document.getElementById("app");
-  app.innerHTML = "";
+        div.innerHTML = `
+            <div>
+                <b>${r.name}</b><br>
+                <small>${r.stream_url || "-"}</small>
+            </div>
 
-  data.forEach(r => {
+            <div>
+                <div class="${cls}">${r.stream_status}</div>
+                <div class="badge">⏱ ${r.response_time_ms ?? "-"} ms</div>
+            </div>
+        `;
 
-    const div = document.createElement("div");
-    div.className = "card " + (r.stream_status || "broken");
-
-    const up = r.uptime_percent || 0;
-
-    div.innerHTML = `
-      <b>${r.name}</b>
-      <div class="meta">
-        Status: ${r.stream_status} | Ping: ${r.response_time_ms ?? "-"} ms
-      </div>
-
-      <div class="bar">
-        <div class="fill" style="width:${up}%"></div>
-      </div>
-
-      <div class="meta">Uptime: ${up}%</div>
-    `;
-
-    app.appendChild(div);
-  });
+        list.appendChild(div);
+    });
 }
 
 load();
-setInterval(load,4000);
-
+setInterval(load, 5000);
 </script>
 
 </body>
