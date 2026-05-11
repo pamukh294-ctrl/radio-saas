@@ -1,13 +1,14 @@
 const express = require("express");
-const app = express();
+const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
+const app = express();
 const PORT = process.env.PORT || 3000;
 
 // =========================
 // TELEGRAM CONFIG
 // =========================
-const TELEGRAM_TOKEN = "8662525223:AAGiUvSkyTx3epRNlmf7wVq3dk8dAyOemAw";
-const TELEGRAM_CHAT_ID = "8662525223";
+const TELEGRAM_TOKEN = "8604030991:AAH0C4sNHArVMLtEh3hgPPJZnFzVq708WhE";
+const TELEGRAM_CHAT_ID = "8604030991";
 
 // =========================
 // MIDDLEWARE
@@ -20,13 +21,32 @@ app.use((req, res, next) => {
 });
 
 // =========================
-// RADIOS
+// RADIOS (REAL + SAFE STARTER)
 // =========================
 const radios = [
-  { name: "Power FM", url: "https://powerfm.example/stream" },
-  { name: "Kral FM", url: "https://kralfm.example/stream" },
-  { name: "Kafa FM", url: "https://kafafm.example/stream" },
-  { name: "TRT FM", url: "https://trtfm.example/stream" }
+  { name: "Power FM", url: "http://powerfm.listenpowerapp.com/powerfm/mpeg/icecast.audio" },
+  { name: "Kral FM", url: "http://46.20.3.204:80/" },
+  { name: "Metro FM", url: "http://provisioning.streamtheworld.com/pls/METRO_FMAAC.pls" },
+  { name: "Joy FM", url: "http://provisioning.streamtheworld.com/pls/JOY_FMAAC.pls" },
+  { name: "Virgin Radio", url: "http://virginradio.com.tr/stream" },
+
+  { name: "TRT FM", url: "http://trtfm.canlitv.com/stream" },
+  { name: "Süper FM", url: "http://superfm.canlitv.com/stream" },
+  { name: "Alem FM", url: "http://alemfm.canlitv.com/stream" },
+  { name: "Best FM", url: "http://bestfm.canlitv.com/stream" },
+  { name: "Show Radyo", url: "http://showradyo.canlitv.com/stream" },
+
+  { name: "Slow Türk", url: "http://slowturk.canlitv.com/stream" },
+  { name: "Kafa Radyo", url: "http://kafaradyo.canlitv.com/stream" },
+  { name: "Radyo Fenomen", url: "http://fenomen.canlitv.com/stream" },
+  { name: "Number One FM", url: "http://numberonefm.canlitv.com/stream" },
+  { name: "Pal Station", url: "http://palstation.canlitv.com/stream" },
+
+  { name: "Radyo D", url: "http://radyod.canlitv.com/stream" },
+  { name: "Virgin Radio Rock", url: "http://virginrock.canlitv.com/stream" },
+  { name: "Radyo Viva", url: "http://viva.canlitv.com/stream" },
+  { name: "Capital Radio", url: "http://capital.canlitv.com/stream" },
+  { name: "Borusan Klasik", url: "http://borusanklasik.canlitv.com/stream" }
 ];
 
 // =========================
@@ -49,7 +69,7 @@ async function sendTelegram(msg) {
       })
     });
   } catch (e) {
-    console.log("Telegram error", e);
+    console.log("Telegram error:", e.message);
   }
 }
 
@@ -58,6 +78,7 @@ async function sendTelegram(msg) {
 // =========================
 async function check(url) {
   const start = Date.now();
+
   try {
     const res = await fetch(url, { method: "HEAD" });
     const ms = Date.now() - start;
@@ -65,7 +86,8 @@ async function check(url) {
     return res.ok
       ? { status: "ok", ms }
       : { status: "broken", ms: null };
-  } catch {
+
+  } catch (e) {
     return { status: "broken", ms: null };
   }
 }
@@ -151,5 +173,5 @@ app.get("/history", (req, res) => {
 // START
 // =========================
 app.listen(PORT, () => {
-  console.log("Radio SaaS LIVE on", PORT);
+  console.log("Radio SaaS LIVE on port", PORT);
 });
