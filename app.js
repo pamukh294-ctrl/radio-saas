@@ -74,21 +74,18 @@ async function sendTelegram(msg) {
 }
 
 // =========================
-// STREAM CHECK (FIXED)
+// STREAM CHECK (FIXED PROPER)
 // =========================
 async function check(url) {
   const start = Date.now();
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
     const res = await fetch(url, {
       method: "GET",
-      signal: controller.signal
+      headers: {
+        "Range": "bytes=0-1"
+      }
     });
-
-    clearTimeout(timeout);
 
     const ms = Date.now() - start;
 
