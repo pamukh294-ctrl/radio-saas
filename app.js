@@ -7,7 +7,7 @@ const pharmacyRoutes = require("./routes/pharmacy");
 const petshopRoutes = require("./routes/petshop");
 
 app.use(express.static(__dirname));
-
+app.use(express.static("public"));
 app.use(express.json());
 
 // =========================
