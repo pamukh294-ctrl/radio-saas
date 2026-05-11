@@ -6,10 +6,22 @@
 
 <style>
 body { background:#111; color:white; font-family:Arial; text-align:center; }
-.card { background:#222; margin:10px auto; width:300px; padding:10px; border-radius:10px; cursor:pointer; }
+
+.card {
+  background:#222;
+  margin:10px auto;
+  width:300px;
+  padding:10px;
+  border-radius:10px;
+  cursor:pointer;
+}
+
 .ok { border-left:5px solid green; }
 .broken { border-left:5px solid red; }
+
 audio { width:300px; margin-top:15px; }
+
+h3 { margin-top:20px; }
 </style>
 
 </head>
@@ -22,12 +34,9 @@ audio { width:300px; margin-top:15px; }
 
 <audio id="player" controls></audio>
 
-<button onclick="toggleFav()">❤️ Favori</button>
-
 <script>
 
 let current = null;
-let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
 // ---------------- LOAD ----------------
 async function load() {
@@ -35,29 +44,34 @@ async function load() {
   const res = await fetch("/api/radio");
   const data = await res.json();
 
-  // STATS FIX
   document.getElementById("stats").innerHTML = `
-    <h3>📊 Stats</h3>
-    <p>Toplam: ${data.stats.total}</p>
-    <p>🟢 Çalışan: ${data.stats.ok}</p>
-    <p>🔴 Bozuk: ${data.stats.broken}</p>
+    📊 Total: ${data.stats.total} |
+    🟢 OK: ${data.stats.ok} |
+    🔴 Broken: ${data.stats.broken}
   `;
 
   const list = document.getElementById("list");
 
-  data.radios.forEach(r => {
+  Object.keys(data.radios).forEach(cat => {
 
-    const div = document.createElement("div");
-    div.className = "card " + r.status;
+    const title = document.createElement("h3");
+    title.innerText = "📁 " + cat;
+    list.appendChild(title);
 
-    div.innerHTML = `
-      <b>${r.name}</b><br>
-      ${r.status === "ok" ? "🟢 OK" : "🔴 BROKEN"}
-    `;
+    data.radios[cat].forEach(r => {
 
-    div.onclick = () => play(r);
+      const div = document.createElement("div");
+      div.className = "card " + r.status;
 
-    list.appendChild(div);
+      div.innerHTML = `
+        <b>${r.name}</b><br>
+        ${r.status === "ok" ? "🟢 Live" : "🔴 Offline"}
+      `;
+
+      div.onclick = () => play(r);
+
+      list.appendChild(div);
+    });
   });
 }
 
@@ -74,21 +88,7 @@ function play(r) {
   const player = document.getElementById("player");
   player.src = r.url;
   player.load();
-  player.play().catch(()=>alert("Play engellendi, tekrar tıkla"));
-}
-
-// ---------------- FAVORİ ----------------
-function toggleFav() {
-  if (!current) return;
-
-  const exists = favorites.find(f => f.name === current.name);
-
-  if (!exists) favorites.push(current);
-  else favorites = favorites.filter(f => f.name !== current.name);
-
-  localStorage.setItem("fav", JSON.stringify(favorites));
-
-  alert("❤️ Favoriler güncellendi");
+  player.play().catch(()=>alert("Play engellendi"));
 }
 
 load();

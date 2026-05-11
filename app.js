@@ -5,11 +5,21 @@ app.use(express.json());
 app.use(express.static("public"));
 
 /* =========================
-   DİNAMİK RADYO DB
+   RADYO VERİTABANI (KATEGORİLİ)
 ========================= */
 let radios = [
-  { name: "Radio Paradise", url: "https://stream-uk1.radioparadise.com/mp3-192" },
-  { name: "KEXP", url: "https://kexp-mp3-128.streamguys1.com/kexp128.mp3" }
+  { name: "Radio Paradise", url: "https://stream-uk1.radioparadise.com/mp3-192", cat: "Pop" },
+  { name: "BBC Radio 1", url: "http://stream.live.vc.bbcmedia.co.uk/bbc_radio_one", cat: "Pop" },
+
+  { name: "KEXP", url: "https://kexp-mp3-128.streamguys1.com/kexp128.mp3", cat: "Rock" },
+  { name: "Rock Antenne", url: "https://stream.rockantenne.de/rockantenne/stream/mp3", cat: "Rock" },
+
+  { name: "BBC World", url: "http://stream.live.vc.bbcmedia.co.uk/bbc_radio_fourfm", cat: "News" },
+  { name: "NPR News", url: "https://npr-ice.streamguys1.com/live.mp3", cat: "News" },
+
+  { name: "DI FM", url: "https://stream.difm.com/di_128.mp3", cat: "Electronic" },
+
+  { name: "TRT FM", url: "http://trtfm.canlitv.com/stream", cat: "TR" }
 ];
 
 /* =========================
@@ -25,26 +35,34 @@ async function check(url) {
 }
 
 /* =========================
-   RADIO API (STATUS + ANALYTICS)
+   RADYO API + STATS + KATEGORİ
 ========================= */
 app.get("/api/radio", async (req, res) => {
 
+  let grouped = {};
   let ok = 0;
   let broken = 0;
 
-  const data = await Promise.all(
-    radios.map(async r => {
-      const status = await check(r.url);
+  for (let r of radios) {
 
-      if (status) ok++;
-      else broken++;
+    let status = false;
 
-      return {
-        ...r,
-        status: status ? "ok" : "broken"
-      };
-    })
-  );
+    try {
+      const result = await fetch(r.url, { method: "HEAD" });
+      status = result.ok;
+    } catch {}
+
+    if (status) ok++;
+    else broken++;
+
+    if (!grouped[r.cat]) grouped[r.cat] = [];
+
+    grouped[r.cat].push({
+      name: r.name,
+      url: r.url,
+      status: status ? "ok" : "broken"
+    });
+  }
 
   res.json({
     stats: {
@@ -52,34 +70,12 @@ app.get("/api/radio", async (req, res) => {
       ok,
       broken
     },
-    radios: data
+    radios: grouped
   });
 });
 
 /* =========================
-   ADMIN - RADYO EKLE
-========================= */
-app.post("/api/admin/add", (req, res) => {
-  const { name, url } = req.body;
-
-  radios.push({ name, url });
-
-  res.json({ success: true, radios });
-});
-
-/* =========================
-   ADMIN - RADYO SİL
-========================= */
-app.post("/api/admin/delete", (req, res) => {
-  const { name } = req.body;
-
-  radios = radios.filter(r => r.name !== name);
-
-  res.json({ success: true, radios });
-});
-
-/* =========================
-   PRAYER
+   PRAYER API
 ========================= */
 app.get("/api/prayer", (req, res) => {
   res.json({
@@ -93,9 +89,36 @@ app.get("/api/prayer", (req, res) => {
 });
 
 /* =========================
-   START
+   PHARMACY
+========================= */
+app.get("/api/pharmacy", (req, res) => {
+  res.json([
+    { name: "Merkez Eczanesi", district: "Atakum" },
+    { name: "Güneş Eczanesi", district: "Samsun" }
+  ]);
+});
+
+/* =========================
+   PETSHOP
+========================= */
+app.get("/api/petshop", (req, res) => {
+  res.json([
+    { name: "Happy Pets", city: "Samsun" },
+    { name: "Pet World", city: "İstanbul" }
+  ]);
+});
+
+/* =========================
+   ROOT
+========================= */
+app.get("/", (req, res) => {
+  res.send("RADIO SAAS LIVE 🚀");
+});
+
+/* =========================
+   START SERVER
 ========================= */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("SAAS ADMIN RUNNING:", PORT);
+  console.log("RADIO SAAS RUNNING:", PORT);
 });
