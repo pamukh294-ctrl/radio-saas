@@ -2,93 +2,239 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Radio SaaS</title>
+<title>Frekansım</title>
 
 <style>
-body { background:#111; color:white; font-family:Arial; text-align:center; }
+body{
+  margin:0;
+  background:#0b0b10;
+  color:white;
+  font-family:Arial;
+}
 
-.card {
-  background:#222;
-  margin:10px auto;
-  width:300px;
-  padding:10px;
-  border-radius:10px;
+/* TOP BAR */
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:15px 20px;
+}
+
+.logo{
+  font-size:22px;
+  font-weight:bold;
+}
+
+.logo span{
+  color:#a855f7;
+}
+
+.icon{
+  font-size:20px;
+  margin-left:10px;
   cursor:pointer;
 }
 
-.ok { border-left:5px solid green; }
-.broken { border-left:5px solid red; }
+/* CATEGORY */
+.categories{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding:10px 15px;
+}
 
-audio { width:300px; margin-top:15px; }
+.cat{
+  background:#1c1c25;
+  padding:8px 14px;
+  border-radius:20px;
+  white-space:nowrap;
+  cursor:pointer;
+}
 
-h3 { margin-top:20px; }
+.cat.active{
+  background:#a855f7;
+}
+
+/* RADIO LIST */
+.list{
+  padding:10px 15px;
+}
+
+.card{
+  background:#1a1a22;
+  margin:10px 0;
+  padding:12px;
+  border-radius:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.left{
+  display:flex;
+  flex-direction:column;
+}
+
+.name{
+  font-weight:bold;
+}
+
+.catname{
+  font-size:12px;
+  color:#aaa;
+}
+
+.play{
+  background:#a855f7;
+  border:none;
+  color:white;
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  cursor:pointer;
+}
+
+/* PLAYER */
+.player{
+  position:fixed;
+  bottom:70px;
+  left:10px;
+  right:10px;
+  background:#111;
+  padding:10px;
+  border-radius:12px;
+}
+
+/* BOTTOM NAV */
+.bottom{
+  position:fixed;
+  bottom:0;
+  width:100%;
+  display:flex;
+  justify-content:space-around;
+  background:#0f0f15;
+  padding:10px 0;
+  font-size:12px;
+}
 </style>
 
 </head>
+
 <body>
 
-<h2>🎧 RADIO SAAS</h2>
+<!-- TOP -->
+<div class="topbar">
+  <div class="logo">Frekans<span>ım</span></div>
+  <div>
+    🔍 ⚙️
+  </div>
+</div>
 
-<div id="stats"></div>
-<div id="list"></div>
+<!-- CATEGORIES -->
+<div class="categories" id="cats"></div>
 
-<audio id="player" controls></audio>
+<!-- LIST -->
+<div class="list" id="list"></div>
+
+<!-- PLAYER -->
+<div class="player">
+  <audio id="audio" controls style="width:100%"></audio>
+</div>
+
+<!-- BOTTOM -->
+<div class="bottom">
+  <div>📻 Radyo</div>
+  <div>❤️ Favori</div>
+  <div>🕌 Namaz</div>
+  <div>⚙️ Ayar</div>
+</div>
 
 <script>
 
 let current = null;
+let selectedCat = "All";
+let dataStore = {};
 
-// ---------------- LOAD ----------------
-async function load() {
-
+/* LOAD */
+async function load(){
   const res = await fetch("/api/radio");
   const data = await res.json();
 
-  document.getElementById("stats").innerHTML = `
-    📊 Total: ${data.stats.total} |
-    🟢 OK: ${data.stats.ok} |
-    🔴 Broken: ${data.stats.broken}
-  `;
+  dataStore = data.radios;
 
-  const list = document.getElementById("list");
+  renderCats();
+  renderList();
+}
 
-  Object.keys(data.radios).forEach(cat => {
+/* CATEGORIES */
+function renderCats(){
+  const cats = ["All", ...Object.keys(dataStore)];
 
-    const title = document.createElement("h3");
-    title.innerText = "📁 " + cat;
-    list.appendChild(title);
+  const el = document.getElementById("cats");
+  el.innerHTML = "";
 
-    data.radios[cat].forEach(r => {
+  cats.forEach(c=>{
+    const div = document.createElement("div");
+    div.className = "cat" + (c===selectedCat?" active":"");
+    div.innerText = c;
 
-      const div = document.createElement("div");
-      div.className = "card " + r.status;
+    div.onclick = ()=>{
+      selectedCat = c;
+      renderCats();
+      renderList();
+    };
 
-      div.innerHTML = `
-        <b>${r.name}</b><br>
-        ${r.status === "ok" ? "🟢 Live" : "🔴 Offline"}
-      `;
-
-      div.onclick = () => play(r);
-
-      list.appendChild(div);
-    });
+    el.appendChild(div);
   });
 }
 
-// ---------------- PLAY ----------------
-function play(r) {
+/* LIST */
+function renderList(){
+  const list = document.getElementById("list");
+  list.innerHTML = "";
 
-  if (r.status === "broken") {
-    alert("⚠️ Bu radyo çalışmıyor");
+  let radios = [];
+
+  if(selectedCat==="All"){
+    Object.keys(dataStore).forEach(k=>{
+      radios = radios.concat(dataStore[k]);
+    });
+  }else{
+    radios = dataStore[selectedCat] || [];
+  }
+
+  radios.forEach(r=>{
+
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <div class="left">
+        <div class="name">${r.name}</div>
+        <div class="catname">${r.status}</div>
+      </div>
+      <button class="play">▶</button>
+    `;
+
+    div.onclick = ()=>play(r);
+
+    list.appendChild(div);
+  });
+}
+
+/* PLAY */
+function play(r){
+
+  if(r.status==="broken"){
+    alert("Çalışmıyor ⚠️");
     return;
   }
 
   current = r;
 
-  const player = document.getElementById("player");
-  player.src = r.url;
-  player.load();
-  player.play().catch(()=>alert("Play engellendi"));
+  const audio = document.getElementById("audio");
+  audio.src = r.url;
+  audio.play();
 }
 
 load();
