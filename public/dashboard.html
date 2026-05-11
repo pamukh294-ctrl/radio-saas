@@ -12,11 +12,9 @@ body{
   font-family:Arial;
 }
 
-/* TOP */
 .topbar{
   display:flex;
   justify-content:space-between;
-  align-items:center;
   padding:16px 20px;
 }
 
@@ -27,18 +25,16 @@ body{
 
 .logo span{ color:#a855f7; }
 
-/* TABS */
 .tabs{
   display:flex;
   justify-content:space-around;
-  padding:10px;
   background:#0f0f15;
+  padding:10px;
 }
 
 .tab{
   cursor:pointer;
   padding:8px 12px;
-  border-radius:10px;
 }
 
 .tab.active{
@@ -46,19 +42,17 @@ body{
   font-weight:bold;
 }
 
-/* CATEGORY */
 .categories{
   display:flex;
-  gap:10px;
   overflow-x:auto;
+  gap:10px;
   padding:10px 15px;
 }
 
 .cat{
   background:#1c1c25;
   padding:10px 16px;
-  border-radius:25px;
-  white-space:nowrap;
+  border-radius:20px;
   cursor:pointer;
 }
 
@@ -66,7 +60,6 @@ body{
   background:#a855f7;
 }
 
-/* LIST */
 .list{
   padding:10px 15px;
 }
@@ -77,27 +70,30 @@ body{
   width:320px;
   padding:14px;
   border-radius:16px;
-  cursor:pointer;
   display:flex;
   justify-content:space-between;
   align-items:center;
+  cursor:pointer;
 }
 
 .card:hover{
   background: rgba(255,255,255,0.07);
 }
 
-.name{ font-weight:bold; }
+.name{
+  font-weight:bold;
+}
 
-.status{ font-size:12px; color:#aaa; }
+.status{
+  font-size:12px;
+  color:#aaa;
+}
 
-/* HEART */
 .heart{
   cursor:pointer;
   font-size:18px;
 }
 
-/* PLAYER */
 .player{
   position:fixed;
   bottom:60px;
@@ -141,7 +137,15 @@ let dataStore = {};
 let view = "radio";
 let selectedCat = "All";
 let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
-let current = null;
+
+/* ================= NORMALIZE (EN ÖNEMLİ FIX) ================= */
+function normalize(r){
+  return {
+    name: r.name,
+    url: r.url,
+    status: r.status || "fav"
+  };
+}
 
 /* ================= LOAD ================= */
 async function load(){
@@ -154,7 +158,7 @@ async function load(){
   renderList();
 }
 
-/* ================= TAB ================= */
+/* ================= VIEW ================= */
 function setView(v){
   view = v;
 
@@ -192,6 +196,49 @@ function renderCats(){
   });
 }
 
+/* ================= PLAY (FIXED) ================= */
+function play(r){
+
+  if(!r || !r.url){
+    alert("⚠️ Radyo verisi hatalı");
+    return;
+  }
+
+  if(r.status === "broken"){
+    alert("⚠️ Bu radyo çalışmıyor");
+    return;
+  }
+
+  const audio = document.getElementById("audio");
+
+  audio.pause();
+  audio.src = r.url;
+  audio.load();
+
+  audio.play().catch(()=>{
+    alert("▶️ Tekrar tıkla");
+  });
+}
+
+/* ================= FAVORİ ================= */
+function toggleFav(e, r){
+  e.stopPropagation();
+
+  const clean = normalize(r);
+
+  const exists = favorites.find(f => f.name === clean.name);
+
+  if(!exists){
+    favorites.push(clean);
+  } else {
+    favorites = favorites.filter(f => f.name !== clean.name);
+  }
+
+  localStorage.setItem("fav", JSON.stringify(favorites));
+
+  renderList();
+}
+
 /* ================= LIST ================= */
 function renderList(){
 
@@ -200,10 +247,10 @@ function renderList(){
 
   let radios = [];
 
-  // VIEW LOGIC
   if(view === "fav"){
-    radios = favorites;
+    radios = favorites.map(normalize);
   } else {
+
     if(selectedCat === "All"){
       Object.keys(dataStore).forEach(k=>{
         radios = radios.concat(dataStore[k]);
@@ -211,19 +258,22 @@ function renderList(){
     } else {
       radios = dataStore[selectedCat] || [];
     }
+
   }
 
   radios.forEach(r=>{
 
-    const isFav = favorites.find(f => f.name === r.name && f.url === r.url);
+    const clean = normalize(r);
+
+    const isFav = favorites.find(f => f.name === clean.name);
 
     const div = document.createElement("div");
     div.className = "card";
 
     div.innerHTML = `
       <div>
-        <div class="name">${r.name}</div>
-        <div class="status">${r.status || "fav"}</div>
+        <div class="name">${clean.name}</div>
+        <div class="status">${clean.status}</div>
       </div>
 
       <div class="heart">
@@ -231,51 +281,16 @@ function renderList(){
       </div>
     `;
 
-    // PLAY
-    div.onclick = ()=>play(r);
+    div.onclick = ()=>play(clean);
 
-    // FAVORİ
     div.querySelector(".heart").onclick = (e)=>{
-      e.stopPropagation();
-      toggleFav(r);
+      toggleFav(e, clean);
     };
 
     list.appendChild(div);
   });
 }
 
-/* ================= PLAY ================= */
-function play(r){
-
-  if(r.status === "broken"){
-    alert("⚠️ Çalışmıyor");
-    return;
-  }
-
-  current = r;
-
-  const audio = document.getElementById("audio");
-  audio.src = r.url;
-  audio.play();
-}
-
-/* ================= FAVORİ ================= */
-function toggleFav(r){
-
-  const exists = favorites.find(f => f.name === r.name && f.url === r.url);
-
-  if(!exists){
-    favorites.push(r);
-  } else {
-    favorites = favorites.filter(f => f.name !== r.name || f.url !== r.url);
-  }
-
-  localStorage.setItem("fav", JSON.stringify(favorites));
-
-  renderList();
-}
-
-/* ================= INIT ================= */
 load();
 
 </script>
