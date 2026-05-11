@@ -12,7 +12,7 @@ body{
   font-family:Arial;
 }
 
-/* TOP BAR */
+/* TOP */
 .topbar{
   display:flex;
   justify-content:space-between;
@@ -43,7 +43,6 @@ body{
   border-radius:25px;
   white-space:nowrap;
   cursor:pointer;
-  transition:0.2s;
 }
 
 .cat.active{
@@ -72,6 +71,10 @@ body{
   border-radius:16px;
   cursor:pointer;
   transition:0.2s;
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
 }
 
 .card:hover{
@@ -79,8 +82,32 @@ body{
   background: rgba(255,255,255,0.07);
 }
 
+.left{
+  display:flex;
+  flex-direction:column;
+}
+
+.name{
+  font-weight:bold;
+}
+
+.catname{
+  font-size:12px;
+  color:#aaa;
+}
+
 .ok{ border-left:4px solid #22c55e; }
 .broken{ border-left:4px solid #ef4444; }
+
+.play{
+  background:#a855f7;
+  border:none;
+  color:white;
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  cursor:pointer;
+}
 
 /* PLAYER */
 .player{
@@ -106,12 +133,7 @@ body{
   font-size:12px;
 }
 
-button{
-  background:#a855f7;
-  border:none;
-  color:white;
-  padding:6px 10px;
-  border-radius:8px;
+.bottom div{
   cursor:pointer;
 }
 </style>
@@ -123,13 +145,15 @@ button{
 <!-- TOP -->
 <div class="topbar">
   <div class="logo">Frekans<span>ım</span></div>
-  <button onclick="toggleFav()">❤️</button>
+  <div>
+    📻 ⚙️
+  </div>
 </div>
 
 <!-- STATS -->
 <div class="stats" id="stats"></div>
 
-<!-- CATEGORIES -->
+<!-- CATEGORY -->
 <div class="categories" id="cats"></div>
 
 <!-- LIST -->
@@ -142,22 +166,22 @@ button{
 
 <!-- BOTTOM -->
 <div class="bottom">
-  <div>📻 Radyo</div>
-  <div>❤️ Favori</div>
+  <div onclick="setView('all')">📻 Radyo</div>
+  <div onclick="setView('fav')">❤️ Favori</div>
   <div>🕌 Namaz</div>
   <div>⚙️ Ayar</div>
 </div>
 
 <script>
 
-let current = null;
-let selectedCat = "All";
 let dataStore = {};
+let selectedCat = "All";
+let view = "all";
 let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
+let current = null;
 
-// ---------------- LOAD ----------------
+/* ================= LOAD ================= */
 async function load(){
-
   const res = await fetch("/api/radio");
   const data = await res.json();
 
@@ -170,7 +194,13 @@ async function load(){
   renderList();
 }
 
-// ---------------- CATEGORY ----------------
+/* ================= VIEW ================= */
+function setView(v){
+  view = v;
+  renderList();
+}
+
+/* ================= CATEGORY ================= */
 function renderCats(){
   const cats = ["All", ...Object.keys(dataStore)];
 
@@ -192,28 +222,48 @@ function renderCats(){
   });
 }
 
-// ---------------- LIST ----------------
+/* ================= LIST ================= */
 function renderList(){
+
   const list = document.getElementById("list");
   list.innerHTML = "";
 
   let radios = [];
 
-  if(selectedCat === "All"){
-    Object.keys(dataStore).forEach(k=>{
-      radios = radios.concat(dataStore[k]);
-    });
+  // VIEW CONTROL
+  if(view === "fav"){
+    radios = favorites;
   }else{
-    radios = dataStore[selectedCat] || [];
+
+    if(selectedCat === "All"){
+      Object.keys(dataStore).forEach(k=>{
+        radios = radios.concat(dataStore[k]);
+      });
+    }else{
+      radios = dataStore[selectedCat] || [];
+    }
+
   }
 
   radios.forEach(r=>{
+
+    const isFav = favorites.find(f => f.name === r.name);
+
     const div = document.createElement("div");
-    div.className = "card " + r.status;
+    div.className = "card";
 
     div.innerHTML = `
-      <b>${r.name}</b><br>
-      ${r.status === "ok" ? "🟢 Live" : "🔴 Offline"}
+      <div class="left">
+        <div class="name">${r.name}</div>
+        <div class="catname">${r.status || "fav"}</div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span onclick="toggleFav(event, r)">
+          ${isFav ? "💜" : "🤍"}
+        </span>
+        <button class="play">▶</button>
+      </div>
     `;
 
     div.onclick = ()=>play(r);
@@ -222,11 +272,11 @@ function renderList(){
   });
 }
 
-// ---------------- PLAY ----------------
+/* ================= PLAY ================= */
 function play(r){
 
   if(r.status === "broken"){
-    alert("⚠️ Bu radyo çalışmıyor");
+    alert("⚠️ Çalışmıyor");
     return;
   }
 
@@ -237,24 +287,24 @@ function play(r){
   audio.play();
 }
 
-// ---------------- FAVORİ ----------------
-function toggleFav(){
+/* ================= FAVORİ ================= */
+function toggleFav(e, r){
+  e.stopPropagation();
 
-  if(!current) return;
-
-  const exists = favorites.find(f=>f.name===current.name);
+  const exists = favorites.find(f => f.name === r.name);
 
   if(!exists){
-    favorites.push(current);
+    favorites.push(r);
   }else{
-    favorites = favorites.filter(f=>f.name!==current.name);
+    favorites = favorites.filter(f => f.name !== r.name);
   }
 
   localStorage.setItem("fav", JSON.stringify(favorites));
 
-  alert("❤️ Favoriler güncellendi");
+  renderList();
 }
 
+/* ================= INIT ================= */
 load();
 
 </script>
