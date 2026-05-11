@@ -1,116 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Radio SaaS</title>
+<meta charset="UTF-8">
+<title>Radio SaaS</title>
 
-  <style>
-    body {
-      font-family: Arial;
-      background: #111;
-      color: white;
-      text-align: center;
-    }
+<style>
+body { background:#111; color:white; font-family:Arial; text-align:center; }
+.card { background:#222; margin:10px auto; width:300px; padding:10px; border-radius:10px; cursor:pointer; }
+.ok { border-left:5px solid green; }
+.broken { border-left:5px solid red; }
+audio { width:300px; margin-top:15px; }
+</style>
 
-    .card {
-      background: #222;
-      padding: 10px;
-      margin: 8px auto;
-      width: 300px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    .card:hover { background: #333; }
-
-    button {
-      margin: 10px;
-      padding: 8px;
-    }
-
-    audio {
-      width: 300px;
-      margin-top: 15px;
-    }
-  </style>
 </head>
-
 <body>
 
 <h2>🎧 RADIO SAAS</h2>
 
+<div id="stats"></div>
 <div id="list"></div>
 
 <audio id="player" controls></audio>
 
-<br>
-
-<button onclick="toggleFavorite()">❤️ Favori</button>
+<button onclick="toggleFav()">❤️ Favori</button>
 
 <script>
 
-let currentRadio = null;
-let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+let current = null;
+let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
-// -------------------- RADYOLARI YÜKLE --------------------
-async function loadRadios() {
+// ---------------- LOAD ----------------
+async function load() {
+
   const res = await fetch("/api/radio");
   const data = await res.json();
 
+  // STATS FIX
+  document.getElementById("stats").innerHTML = `
+    <h3>📊 Stats</h3>
+    <p>Toplam: ${data.stats.total}</p>
+    <p>🟢 Çalışan: ${data.stats.ok}</p>
+    <p>🔴 Bozuk: ${data.stats.broken}</p>
+  `;
+
   const list = document.getElementById("list");
 
-  Object.keys(data).forEach(cat => {
+  data.radios.forEach(r => {
 
-    const title = document.createElement("h3");
-    title.innerText = "📁 " + cat;
-    list.appendChild(title);
+    const div = document.createElement("div");
+    div.className = "card " + r.status;
 
-    data[cat].forEach(r => {
-      const div = document.createElement("div");
-      div.className = "card";
-      div.innerHTML = r.name;
+    div.innerHTML = `
+      <b>${r.name}</b><br>
+      ${r.status === "ok" ? "🟢 OK" : "🔴 BROKEN"}
+    `;
 
-      div.onclick = () => playRadio(r);
+    div.onclick = () => play(r);
 
-      list.appendChild(div);
-    });
-
+    list.appendChild(div);
   });
 }
 
-// -------------------- PLAY --------------------
-function playRadio(r) {
-  currentRadio = r;
+// ---------------- PLAY ----------------
+function play(r) {
 
-  const player = document.getElementById("player");
-
-  player.pause();
-  player.src = r.url;
-  player.load();
-
-  player.play().catch(() => {
-    alert("⚠️ Çalma engellendi, tekrar tıkla");
-  });
-}
-
-// -------------------- FAVORİ --------------------
-function toggleFavorite() {
-  if (!currentRadio) return;
-
-  const exists = favorites.find(f => f.name === currentRadio.name);
-
-  if (!exists) {
-    favorites.push(currentRadio);
-  } else {
-    favorites = favorites.filter(f => f.name !== currentRadio.name);
+  if (r.status === "broken") {
+    alert("⚠️ Bu radyo çalışmıyor");
+    return;
   }
 
-  localStorage.setItem("favorites", JSON.stringify(favorites));
+  current = r;
+
+  const player = document.getElementById("player");
+  player.src = r.url;
+  player.load();
+  player.play().catch(()=>alert("Play engellendi, tekrar tıkla"));
+}
+
+// ---------------- FAVORİ ----------------
+function toggleFav() {
+  if (!current) return;
+
+  const exists = favorites.find(f => f.name === current.name);
+
+  if (!exists) favorites.push(current);
+  else favorites = favorites.filter(f => f.name !== current.name);
+
+  localStorage.setItem("fav", JSON.stringify(favorites));
 
   alert("❤️ Favoriler güncellendi");
 }
 
-loadRadios();
+load();
 
 </script>
 

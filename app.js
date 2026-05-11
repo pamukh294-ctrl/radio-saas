@@ -5,13 +5,11 @@ app.use(express.json());
 app.use(express.static("public"));
 
 /* =========================
-   RADYO VERİ TABANI
+   DİNAMİK RADYO DB
 ========================= */
-const radios = [
+let radios = [
   { name: "Radio Paradise", url: "https://stream-uk1.radioparadise.com/mp3-192" },
-  { name: "KEXP", url: "https://kexp-mp3-128.streamguys1.com/kexp128.mp3" },
-  { name: "BBC World", url: "http://stream.live.vc.bbcmedia.co.uk/bbc_radio_fourfm" },
-  { name: "NPR", url: "https://npr-ice.streamguys1.com/live.mp3" }
+  { name: "KEXP", url: "https://kexp-mp3-128.streamguys1.com/kexp128.mp3" }
 ];
 
 /* =========================
@@ -27,7 +25,7 @@ async function check(url) {
 }
 
 /* =========================
-   RADYO API + ANALYTICS
+   RADIO API (STATUS + ANALYTICS)
 ========================= */
 app.get("/api/radio", async (req, res) => {
 
@@ -42,8 +40,7 @@ app.get("/api/radio", async (req, res) => {
       else broken++;
 
       return {
-        name: r.name,
-        url: r.url,
+        ...r,
         status: status ? "ok" : "broken"
       };
     })
@@ -60,7 +57,29 @@ app.get("/api/radio", async (req, res) => {
 });
 
 /* =========================
-   PRAYER (SABİT V1)
+   ADMIN - RADYO EKLE
+========================= */
+app.post("/api/admin/add", (req, res) => {
+  const { name, url } = req.body;
+
+  radios.push({ name, url });
+
+  res.json({ success: true, radios });
+});
+
+/* =========================
+   ADMIN - RADYO SİL
+========================= */
+app.post("/api/admin/delete", (req, res) => {
+  const { name } = req.body;
+
+  radios = radios.filter(r => r.name !== name);
+
+  res.json({ success: true, radios });
+});
+
+/* =========================
+   PRAYER
 ========================= */
 app.get("/api/prayer", (req, res) => {
   res.json({
@@ -74,36 +93,9 @@ app.get("/api/prayer", (req, res) => {
 });
 
 /* =========================
-   PHARMACY
-========================= */
-app.get("/api/pharmacy", (req, res) => {
-  res.json([
-    { name: "Merkez Eczanesi", district: "Atakum" },
-    { name: "Güneş Eczanesi", district: "Samsun" }
-  ]);
-});
-
-/* =========================
-   PETSHOP
-========================= */
-app.get("/api/petshop", (req, res) => {
-  res.json([
-    { name: "Happy Pets", city: "Samsun" },
-    { name: "Pet World", city: "İstanbul" }
-  ]);
-});
-
-/* =========================
-   ROOT
-========================= */
-app.get("/", (req, res) => {
-  res.send("RADIO SAAS RUNNING 🚀");
-});
-
-/* =========================
-   START SERVER
+   START
 ========================= */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("Radio SaaS running on port", PORT);
+  console.log("SAAS ADMIN RUNNING:", PORT);
 });
