@@ -3,8 +3,18 @@ const router = express.Router();
 
 router.get("/", (req, res) => {
   res.json([
-    { name: "Power FM", url: "http://powerfm.listenpowerapp.com/powerfm/mpeg/icecast.audio" },
-    { name: "Kral FM", url: "http://46.20.3.204:80/" }
+    {
+      name: "Radio Paradise",
+      url: "https://stream-uk1.radioparadise.com/mp3-192"
+    },
+    {
+      name: "BBC Radio 1",
+      url: "http://stream.live.vc.bbcmedia.co.uk/bbc_radio_one"
+    },
+    {
+      name: "KEXP",
+      url: "https://kexp-mp3-128.streamguys1.com/kexp128.mp3"
+    }
   ]);
 });
 
