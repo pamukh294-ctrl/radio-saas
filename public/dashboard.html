@@ -1,134 +1,80 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Life Hub Dashboard</title>
+  <meta charset="UTF-8">
+  <title>Radio SaaS Player</title>
   <style>
     body {
       font-family: Arial;
       background: #111;
       color: white;
-      margin: 0;
+      text-align: center;
       padding: 20px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 15px;
     }
 
     .card {
       background: #222;
       padding: 15px;
+      margin: 10px auto;
+      width: 300px;
       border-radius: 10px;
-    }
-
-    .radio-item {
-      padding: 10px;
-      margin: 5px 0;
-      background: #333;
       cursor: pointer;
-      border-radius: 5px;
     }
 
-    .radio-item:hover {
-      background: #444;
+    .card:hover {
+      background: #333;
     }
 
     audio {
-      width: 100%;
-      margin-top: 10px;
+      width: 300px;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
 
-<h2>🚀 LIFE HUB DASHBOARD</h2>
+<h2>🎧 RADIO PLAYER TEST</h2>
 
-<div class="grid">
+<div id="list"></div>
 
-  <!-- RADYO -->
-  <div class="card">
-    <h3>🎧 Radio</h3>
-    <div id="radios"></div>
-    <audio id="player" controls></audio>
-  </div>
-
-  <!-- PRAYER -->
-  <div class="card">
-    <h3>🕌 Prayer Times</h3>
-    <div id="prayer"></div>
-  </div>
-
-  <!-- PHARMACY -->
-  <div class="card">
-    <h3>💊 Pharmacy</h3>
-    <div id="pharmacy"></div>
-  </div>
-
-  <!-- PETSHOP -->
-  <div class="card">
-    <h3>🐶 Petshop</h3>
-    <div id="petshop"></div>
-  </div>
-
-</div>
+<audio id="player" controls></audio>
 
 <script>
-async function loadRadio() {
+async function loadRadios() {
   const res = await fetch("/api/radio");
-  const data = await res.json();
+  const radios = await res.json();
 
-  const div = document.getElementById("radios");
+  const list = document.getElementById("list");
 
-  data.forEach(r => {
-    const el = document.createElement("div");
-    el.className = "radio-item";
-    el.innerText = r.name;
+  radios.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerText = r.name;
 
-    el.onclick = () => {
-      document.getElementById("player").src = r.url;
-      document.getElementById("player").play();
-    };
+    div.onclick = () => play(r.url);
 
-    div.appendChild(el);
+    list.appendChild(div);
   });
 }
 
-async function loadPrayer() {
-  const res = await fetch("/api/prayer");
-  const data = await res.json();
+function play(url) {
+  const player = document.getElementById("player");
 
-  document.getElementById("prayer").innerHTML = `
-    <p>City: ${data.city}</p>
-    <p>Fajr: ${data.fajr}</p>
-    <p>Dhuhr: ${data.dhuhr}</p>
-    <p>Asr: ${data.asr}</p>
-    <p>Maghrib: ${data.maghrib}</p>
-    <p>Isha: ${data.isha}</p>
-  `;
+  player.pause();
+  player.src = url;
+  player.load();
+
+  const p = player.play();
+
+  if (p !== undefined) {
+    p.catch(err => {
+      alert("Play engellendi: tekrar tıkla");
+      console.log(err);
+    });
+  }
 }
 
-async function loadPharmacy() {
-  const res = await fetch("/api/pharmacy");
-  const data = await res.json();
-
-  document.getElementById("pharmacy").innerHTML =
-    data.map(p => `<p>${p.name} - ${p.district}</p>`).join("");
-}
-
-async function loadPetshop() {
-  const res = await fetch("/api/petshop");
-  const data = await res.json();
-
-  document.getElementById("petshop").innerHTML =
-    data.map(p => `<p>${p.name} - ${p.city}</p>`).join("");
-}
-
-loadRadio();
-loadPrayer();
-loadPharmacy();
-loadPetshop();
+loadRadios();
 </script>
 
 </body>
