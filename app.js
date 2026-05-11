@@ -5,7 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // =========================
-// TELEGRAM CONFIG
+// TELEGRAM
 // =========================
 const TELEGRAM_TOKEN = "8604030991:AAH0C4sNHArVMLtEh3hgPPJZnFzVq708WhE";
 const TELEGRAM_CHAT_ID = "8604030991";
@@ -21,7 +21,7 @@ app.use((req, res, next) => {
 });
 
 // =========================
-// RADIOS (REAL + SAFE STARTER)
+// RADIOS (20 ADET)
 // =========================
 const radios = [
   { name: "Power FM", url: "http://powerfm.listenpowerapp.com/powerfm/mpeg/icecast.audio" },
@@ -43,7 +43,7 @@ const radios = [
   { name: "Pal Station", url: "http://palstation.canlitv.com/stream" },
 
   { name: "Radyo D", url: "http://radyod.canlitv.com/stream" },
-  { name: "Virgin Radio Rock", url: "http://virginrock.canlitv.com/stream" },
+  { name: "Virgin Rock", url: "http://virginrock.canlitv.com/stream" },
   { name: "Radyo Viva", url: "http://viva.canlitv.com/stream" },
   { name: "Capital Radio", url: "http://capital.canlitv.com/stream" },
   { name: "Borusan Klasik", url: "http://borusanklasik.canlitv.com/stream" }
@@ -56,7 +56,7 @@ let history = [];
 let lastState = {};
 
 // =========================
-// TELEGRAM ALERT
+// TELEGRAM
 // =========================
 async function sendTelegram(msg) {
   try {
@@ -74,21 +74,34 @@ async function sendTelegram(msg) {
 }
 
 // =========================
-// STREAM CHECK
+// STREAM CHECK (FIXED)
 // =========================
 async function check(url) {
   const start = Date.now();
 
   try {
-    const res = await fetch(url, { method: "HEAD" });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch(url, {
+      method: "GET",
+      signal: controller.signal
+    });
+
+    clearTimeout(timeout);
+
     const ms = Date.now() - start;
 
-    return res.ok
-      ? { status: "ok", ms }
-      : { status: "broken", ms: null };
+    return {
+      status: res.ok ? "ok" : "broken",
+      ms
+    };
 
-  } catch (e) {
-    return { status: "broken", ms: null };
+  } catch {
+    return {
+      status: "broken",
+      ms: null
+    };
   }
 }
 
@@ -114,7 +127,7 @@ function detectChange(results) {
 }
 
 // =========================
-// HISTORY SNAPSHOT
+// HISTORY
 // =========================
 async function snapshot() {
   const results = await Promise.all(
@@ -136,7 +149,6 @@ async function snapshot() {
   if (history.length > 50) history.shift();
 }
 
-// run loop
 setInterval(snapshot, 10000);
 snapshot();
 
@@ -173,5 +185,5 @@ app.get("/history", (req, res) => {
 // START
 // =========================
 app.listen(PORT, () => {
-  console.log("Radio SaaS LIVE on port", PORT);
+  console.log("🚀 Radio SaaS LIVE on port", PORT);
 });
