@@ -7,7 +7,7 @@
 <style>
 body{
   margin:0;
-  background:#0b0b10;
+  background: linear-gradient(180deg,#0b0b10,#0f0f1a);
   color:white;
   font-family:Arial;
 }
@@ -17,7 +17,7 @@ body{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:15px 20px;
+  padding:16px 20px;
 }
 
 .logo{
@@ -27,12 +27,6 @@ body{
 
 .logo span{
   color:#a855f7;
-}
-
-.icon{
-  font-size:20px;
-  margin-left:10px;
-  cursor:pointer;
 }
 
 /* CATEGORY */
@@ -45,67 +39,62 @@ body{
 
 .cat{
   background:#1c1c25;
-  padding:8px 14px;
-  border-radius:20px;
+  padding:10px 16px;
+  border-radius:25px;
   white-space:nowrap;
   cursor:pointer;
+  transition:0.2s;
 }
 
 .cat.active{
   background:#a855f7;
+  box-shadow:0 0 10px #a855f7;
 }
 
-/* RADIO LIST */
+/* STATS */
+.stats{
+  padding:10px 15px;
+  font-size:14px;
+  opacity:0.9;
+}
+
+/* LIST */
 .list{
   padding:10px 15px;
 }
 
 .card{
-  background:#1a1a22;
-  margin:10px 0;
-  padding:12px;
-  border-radius:12px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-.left{
-  display:flex;
-  flex-direction:column;
-}
-
-.name{
-  font-weight:bold;
-}
-
-.catname{
-  font-size:12px;
-  color:#aaa;
-}
-
-.play{
-  background:#a855f7;
-  border:none;
-  color:white;
-  width:40px;
-  height:40px;
-  border-radius:50%;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(10px);
+  margin:10px auto;
+  width:320px;
+  padding:14px;
+  border-radius:16px;
   cursor:pointer;
+  transition:0.2s;
 }
+
+.card:hover{
+  transform:scale(1.02);
+  background: rgba(255,255,255,0.07);
+}
+
+.ok{ border-left:4px solid #22c55e; }
+.broken{ border-left:4px solid #ef4444; }
 
 /* PLAYER */
 .player{
   position:fixed;
-  bottom:70px;
+  bottom:60px;
   left:10px;
   right:10px;
-  background:#111;
+  background:rgba(20,20,30,0.9);
+  backdrop-filter:blur(10px);
   padding:10px;
-  border-radius:12px;
+  border-radius:16px;
 }
 
-/* BOTTOM NAV */
+/* BOTTOM */
 .bottom{
   position:fixed;
   bottom:0;
@@ -116,6 +105,15 @@ body{
   padding:10px 0;
   font-size:12px;
 }
+
+button{
+  background:#a855f7;
+  border:none;
+  color:white;
+  padding:6px 10px;
+  border-radius:8px;
+  cursor:pointer;
+}
 </style>
 
 </head>
@@ -125,10 +123,11 @@ body{
 <!-- TOP -->
 <div class="topbar">
   <div class="logo">Frekans<span>ım</span></div>
-  <div>
-    🔍 ⚙️
-  </div>
+  <button onclick="toggleFav()">❤️</button>
 </div>
+
+<!-- STATS -->
+<div class="stats" id="stats"></div>
 
 <!-- CATEGORIES -->
 <div class="categories" id="cats"></div>
@@ -154,19 +153,24 @@ body{
 let current = null;
 let selectedCat = "All";
 let dataStore = {};
+let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
 
-/* LOAD */
+// ---------------- LOAD ----------------
 async function load(){
+
   const res = await fetch("/api/radio");
   const data = await res.json();
 
   dataStore = data.radios;
 
+  document.getElementById("stats").innerHTML =
+    `📊 Total: ${data.stats.total} | 🟢 ${data.stats.ok} | 🔴 ${data.stats.broken}`;
+
   renderCats();
   renderList();
 }
 
-/* CATEGORIES */
+// ---------------- CATEGORY ----------------
 function renderCats(){
   const cats = ["All", ...Object.keys(dataStore)];
 
@@ -188,14 +192,14 @@ function renderCats(){
   });
 }
 
-/* LIST */
+// ---------------- LIST ----------------
 function renderList(){
   const list = document.getElementById("list");
   list.innerHTML = "";
 
   let radios = [];
 
-  if(selectedCat==="All"){
+  if(selectedCat === "All"){
     Object.keys(dataStore).forEach(k=>{
       radios = radios.concat(dataStore[k]);
     });
@@ -204,16 +208,12 @@ function renderList(){
   }
 
   radios.forEach(r=>{
-
     const div = document.createElement("div");
-    div.className = "card";
+    div.className = "card " + r.status;
 
     div.innerHTML = `
-      <div class="left">
-        <div class="name">${r.name}</div>
-        <div class="catname">${r.status}</div>
-      </div>
-      <button class="play">▶</button>
+      <b>${r.name}</b><br>
+      ${r.status === "ok" ? "🟢 Live" : "🔴 Offline"}
     `;
 
     div.onclick = ()=>play(r);
@@ -222,11 +222,11 @@ function renderList(){
   });
 }
 
-/* PLAY */
+// ---------------- PLAY ----------------
 function play(r){
 
-  if(r.status==="broken"){
-    alert("Çalışmıyor ⚠️");
+  if(r.status === "broken"){
+    alert("⚠️ Bu radyo çalışmıyor");
     return;
   }
 
@@ -235,6 +235,24 @@ function play(r){
   const audio = document.getElementById("audio");
   audio.src = r.url;
   audio.play();
+}
+
+// ---------------- FAVORİ ----------------
+function toggleFav(){
+
+  if(!current) return;
+
+  const exists = favorites.find(f=>f.name===current.name);
+
+  if(!exists){
+    favorites.push(current);
+  }else{
+    favorites = favorites.filter(f=>f.name!==current.name);
+  }
+
+  localStorage.setItem("fav", JSON.stringify(favorites));
+
+  alert("❤️ Favoriler güncellendi");
 }
 
 load();
