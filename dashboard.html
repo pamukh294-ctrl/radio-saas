@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SAAS DASHBOARD</title>
+
+<style>
+body{
+  margin:0;
+  background:#0d0d0d;
+  color:#fff;
+  font-family:Arial;
+}
+
+.header{
+  padding:18px;
+  text-align:center;
+  background:#111;
+  font-weight:bold;
+}
+
+.container{
+  max-width:900px;
+  margin:20px auto;
+}
+
+.card{
+  background:#1c1c1c;
+  margin:10px 0;
+  padding:14px;
+  border-radius:8px;
+  border-left:6px solid #555;
+}
+
+.ok{border-color:#00ff6a}
+.slow{border-color:#ffb300}
+.broken{border-color:#ff3b3b}
+
+.meta{
+  font-size:13px;
+  color:#aaa;
+  margin-top:6px;
+}
+
+.bar{
+  height:6px;
+  background:#333;
+  margin-top:10px;
+  border-radius:4px;
+  overflow:hidden;
+}
+
+.fill{
+  height:6px;
+  background:#00ff6a;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">📡 RADIO SAAS DASHBOARD</div>
+
+<div class="container" id="app"></div>
+
+<script>
+
+const API = "http://localhost:3000/api";
+const TOKEN = "secret123";
+
+async function load(){
+
+  const res = await fetch(API,{
+    headers:{
+      "x-token": TOKEN
+    }
+  });
+
+  if(res.status === 401){
+    document.getElementById("app").innerHTML = "❌ Unauthorized (token wrong)";
+    return;
+  }
+
+  const data = await res.json();
+
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+
+  data.forEach(r => {
+
+    const div = document.createElement("div");
+    div.className = "card " + (r.stream_status || "broken");
+
+    const up = r.uptime_percent || 0;
+
+    div.innerHTML = `
+      <b>${r.name}</b>
+      <div class="meta">
+        Status: ${r.stream_status} | Ping: ${r.response_time_ms ?? "-"} ms
+      </div>
+
+      <div class="bar">
+        <div class="fill" style="width:${up}%"></div>
+      </div>
+
+      <div class="meta">Uptime: ${up}%</div>
+    `;
+
+    app.appendChild(div);
+  });
+}
+
+load();
+setInterval(load,4000);
+
+</script>
+
+</body>
+</html>
