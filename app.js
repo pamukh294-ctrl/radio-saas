@@ -74,29 +74,44 @@ async function sendTelegram(msg) {
 }
 
 // =========================
-// STREAM CHECK (FIXED PROPER)
+// V2 STREAM CHECK ENGINE
 // =========================
 async function check(url) {
   const start = Date.now();
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 7000);
+
     const res = await fetch(url, {
       method: "GET",
-      headers: {
-        "Range": "bytes=0-1"
-      }
+      redirect: "follow",
+      signal: controller.signal
     });
+
+    clearTimeout(timeout);
 
     const ms = Date.now() - start;
 
-    return {
-      status: res.ok ? "ok" : "broken",
-      ms
-    };
+    const contentType = res.headers.get("content-type") || "";
 
-  } catch {
+    if (!res.ok) {
+      return { status: "broken", ms };
+    }
+
+    if (contentType.includes("text/html")) {
+      return { status: "unknown", ms };
+    }
+
+    if (contentType.includes("audio")) {
+      return { status: "ok", ms };
+    }
+
+    return { status: "ok", ms };
+
+  } catch (e) {
     return {
-      status: "broken",
+      status: e.name === "AbortError" ? "slow" : "broken",
       ms: null
     };
   }
@@ -110,13 +125,15 @@ function detectChange(results) {
     const prev = lastState[r.name];
 
     if (prev === "ok" && r.stream_status === "broken") {
-      console.log("🚨 DOWN:", r.name);
       sendTelegram(`🚨 ${r.name} DOWN`);
     }
 
     if (prev === "broken" && r.stream_status === "ok") {
-      console.log("✅ RECOVER:", r.name);
       sendTelegram(`✅ ${r.name} RECOVERED`);
+    }
+
+    if (r.stream_status === "slow") {
+      sendTelegram(`⚠️ ${r.name} SLOW`);
     }
 
     lastState[r.name] = r.stream_status;
@@ -182,5 +199,5 @@ app.get("/history", (req, res) => {
 // START
 // =========================
 app.listen(PORT, () => {
-  console.log("🚀 Radio SaaS LIVE on port", PORT);
+  console.log("🚀 Radio SaaS V2 LIVE on port", PORT);
 });
