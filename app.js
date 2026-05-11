@@ -6,6 +6,8 @@ const prayerRoutes = require("./routes/prayer");
 const pharmacyRoutes = require("./routes/pharmacy");
 const petshopRoutes = require("./routes/petshop");
 
+app.use(express.static(__dirname));
+
 app.use(express.json());
 
 // =========================

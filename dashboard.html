@@ -1,129 +1,69 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Radio SaaS Live</title>
+  <title>Radio SaaS Player</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #111;
+      color: white;
+      text-align: center;
+    }
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    .card {
+      background: #222;
+      margin: 10px auto;
+      padding: 15px;
+      width: 300px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
 
-<style>
-body {
-    margin: 0;
-    font-family: Arial;
-    background: #0b0b0b;
-    color: white;
-}
+    .card:hover {
+      background: #333;
+    }
 
-header {
-    padding: 18px;
-    text-align: center;
-    background: #111;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.container {
-    max-width: 1000px;
-    margin: auto;
-    padding: 20px;
-}
-
-.cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 10px;
-}
-
-.card {
-    background: #161616;
-    padding: 15px;
-    border-radius: 12px;
-}
-
-.ok { color: #00ff88; }
-.bad { color: #ff4d4d; }
-.null { color: #999; }
-
-.chartBox {
-    margin-top: 20px;
-    background: #161616;
-    padding: 20px;
-    border-radius: 12px;
-}
-</style>
+    button {
+      padding: 10px;
+      margin-top: 10px;
+    }
+  </style>
 </head>
-
 <body>
 
-<header>📡 RADIO SAAS FULL SYSTEM</header>
+<h2>🎧 RADIO SAAS PLAYER</h2>
 
-<div class="container">
+<div id="list"></div>
 
-    <div class="cards" id="cards"></div>
-
-    <div class="chartBox">
-        <canvas id="chart"></canvas>
-    </div>
-
-</div>
+<audio id="player" controls style="margin-top:20px; width:300px;"></audio>
 
 <script>
-const API = "/api";
-const HISTORY = "/history";
+async function loadRadios() {
+  const res = await fetch("/api/radio");
+  const radios = await res.json();
 
-let chart;
+  const list = document.getElementById("list");
 
-async function load() {
-    const res = await fetch(API);
-    const data = await res.json();
+  radios.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = r.name;
 
-    const el = document.getElementById("cards");
-    el.innerHTML = "";
+    div.onclick = () => {
+      playRadio(r.url);
+    };
 
-    data.forEach(r => {
-        let cls = "null";
-        if (r.stream_status === "ok") cls = "ok";
-        if (r.stream_status === "broken") cls = "bad";
-
-        el.innerHTML += `
-            <div class="card">
-                <b>${r.name}</b><br>
-                <span class="${cls}">${r.stream_status}</span><br>
-                ⏱ ${r.response_time_ms ?? "-"} ms
-            </div>
-        `;
-    });
+    list.appendChild(div);
+  });
 }
 
-async function loadHistory() {
-    const res = await fetch(HISTORY);
-    const data = await res.json();
-
-    const labels = data.map(d => new Date(d.time).toLocaleTimeString());
-    const ok = data.map(d => d.ok);
-    const bad = data.map(d => d.broken);
-
-    if (chart) chart.destroy();
-
-    chart = new Chart(document.getElementById("chart"), {
-        type: "line",
-        data: {
-            labels,
-            datasets: [
-                { label: "OK", data: ok, borderColor: "#00ff88" },
-                { label: "BROKEN", data: bad, borderColor: "#ff4d4d" }
-            ]
-        }
-    });
+function playRadio(url) {
+  const player = document.getElementById("player");
+  player.src = url;
+  player.play();
 }
 
-load();
-loadHistory();
-
-setInterval(() => {
-    load();
-    loadHistory();
-}, 5000);
+loadRadios();
 </script>
 
 </body>
