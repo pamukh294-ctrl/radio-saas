@@ -15,69 +15,99 @@
     .card {
       background: #222;
       padding: 10px;
-      margin: 10px auto;
+      margin: 8px auto;
       width: 300px;
       border-radius: 8px;
       cursor: pointer;
     }
 
-    .ok { border-left: 5px solid green; }
-    .broken { border-left: 5px solid red; }
+    .card:hover { background: #333; }
+
+    button {
+      margin: 10px;
+      padding: 8px;
+    }
 
     audio {
       width: 300px;
-      margin-top: 20px;
+      margin-top: 15px;
     }
   </style>
 </head>
 
 <body>
 
-<h2>🎧 RADIO SAAS LIVE</h2>
+<h2>🎧 RADIO SAAS</h2>
 
 <div id="list"></div>
 
 <audio id="player" controls></audio>
 
+<br>
+
+<button onclick="toggleFavorite()">❤️ Favori</button>
+
 <script>
 
+let currentRadio = null;
+let favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+
+// -------------------- RADYOLARI YÜKLE --------------------
 async function loadRadios() {
   const res = await fetch("/api/radio");
-  const radios = await res.json();
+  const data = await res.json();
 
   const list = document.getElementById("list");
 
-  radios.forEach(r => {
-    const div = document.createElement("div");
+  Object.keys(data).forEach(cat => {
 
-    div.className = "card " + r.status;
+    const title = document.createElement("h3");
+    title.innerText = "📁 " + cat;
+    list.appendChild(title);
 
-    div.innerHTML = `
-      <b>${r.name}</b><br>
-      Status: ${r.status}
-    `;
+    data[cat].forEach(r => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = r.name;
 
-    div.onclick = () => playRadio(r);
+      div.onclick = () => playRadio(r);
 
-    list.appendChild(div);
+      list.appendChild(div);
+    });
+
   });
 }
 
+// -------------------- PLAY --------------------
 function playRadio(r) {
+  currentRadio = r;
+
   const player = document.getElementById("player");
 
-  // 🚨 UYARI SİSTEMİ
-  if (r.status === "broken") {
-    alert("⚠️ Bu radyo şu an çalışmıyor!");
-    return;
-  }
-
+  player.pause();
   player.src = r.url;
   player.load();
 
   player.play().catch(() => {
-    alert("⚠️ Tarayıcı engelledi, tekrar tıkla");
+    alert("⚠️ Çalma engellendi, tekrar tıkla");
   });
+}
+
+// -------------------- FAVORİ --------------------
+function toggleFavorite() {
+  if (!currentRadio) return;
+
+  const exists = favorites.find(f => f.name === currentRadio.name);
+
+  if (!exists) {
+    favorites.push(currentRadio);
+  } else {
+    favorites = favorites.filter(f => f.name !== currentRadio.name);
+  }
+
+  localStorage.setItem("favorites", JSON.stringify(favorites));
+
+  alert("❤️ Favoriler güncellendi");
 }
 
 loadRadios();
