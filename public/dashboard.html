@@ -2,28 +2,27 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Radio SaaS Player</title>
+  <title>Radio SaaS</title>
+
   <style>
     body {
       font-family: Arial;
       background: #111;
       color: white;
       text-align: center;
-      padding: 20px;
     }
 
     .card {
       background: #222;
-      padding: 15px;
+      padding: 10px;
       margin: 10px auto;
       width: 300px;
-      border-radius: 10px;
+      border-radius: 8px;
       cursor: pointer;
     }
 
-    .card:hover {
-      background: #333;
-    }
+    .ok { border-left: 5px solid green; }
+    .broken { border-left: 5px solid red; }
 
     audio {
       width: 300px;
@@ -31,15 +30,17 @@
     }
   </style>
 </head>
+
 <body>
 
-<h2>🎧 RADIO PLAYER TEST</h2>
+<h2>🎧 RADIO SAAS LIVE</h2>
 
 <div id="list"></div>
 
 <audio id="player" controls></audio>
 
 <script>
+
 async function loadRadios() {
   const res = await fetch("/api/radio");
   const radios = await res.json();
@@ -48,33 +49,39 @@ async function loadRadios() {
 
   radios.forEach(r => {
     const div = document.createElement("div");
-    div.className = "card";
-    div.innerText = r.name;
 
-    div.onclick = () => play(r.url);
+    div.className = "card " + r.status;
+
+    div.innerHTML = `
+      <b>${r.name}</b><br>
+      Status: ${r.status}
+    `;
+
+    div.onclick = () => playRadio(r);
 
     list.appendChild(div);
   });
 }
 
-function play(url) {
+function playRadio(r) {
   const player = document.getElementById("player");
 
-  player.pause();
-  player.src = url;
+  // 🚨 UYARI SİSTEMİ
+  if (r.status === "broken") {
+    alert("⚠️ Bu radyo şu an çalışmıyor!");
+    return;
+  }
+
+  player.src = r.url;
   player.load();
 
-  const p = player.play();
-
-  if (p !== undefined) {
-    p.catch(err => {
-      alert("Play engellendi: tekrar tıkla");
-      console.log(err);
-    });
-  }
+  player.play().catch(() => {
+    alert("⚠️ Tarayıcı engelledi, tekrar tıkla");
+  });
 }
 
 loadRadios();
+
 </script>
 
 </body>
