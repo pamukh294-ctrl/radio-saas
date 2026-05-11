@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <title>Radio SaaS Live</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 body {
     margin: 0;
@@ -21,79 +23,107 @@ header {
 }
 
 .container {
-    max-width: 900px;
+    max-width: 1000px;
     margin: auto;
     padding: 20px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
 }
 
 .card {
     background: #161616;
     padding: 15px;
-    margin: 10px 0;
     border-radius: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }
 
 .ok { color: #00ff88; }
-.broken { color: #ff4d4d; }
+.bad { color: #ff4d4d; }
 .null { color: #999; }
 
-.badge {
-    background: #222;
-    padding: 5px 10px;
-    border-radius: 8px;
-    font-size: 12px;
-    margin-top: 5px;
-    display: inline-block;
+.chartBox {
+    margin-top: 20px;
+    background: #161616;
+    padding: 20px;
+    border-radius: 12px;
 }
 </style>
 </head>
 
 <body>
 
-<header>📡 RADIO SAAS LIVE</header>
+<header>📡 RADIO SAAS FULL SYSTEM</header>
 
-<div class="container" id="list"></div>
+<div class="container">
+
+    <div class="cards" id="cards"></div>
+
+    <div class="chartBox">
+        <canvas id="chart"></canvas>
+    </div>
+
+</div>
 
 <script>
 const API = "/api";
+const HISTORY = "/history";
+
+let chart;
 
 async function load() {
     const res = await fetch(API);
     const data = await res.json();
 
-    const list = document.getElementById("list");
-    list.innerHTML = "";
+    const el = document.getElementById("cards");
+    el.innerHTML = "";
 
     data.forEach(r => {
-
         let cls = "null";
         if (r.stream_status === "ok") cls = "ok";
-        if (r.stream_status === "broken") cls = "broken";
+        if (r.stream_status === "broken") cls = "bad";
 
-        const div = document.createElement("div");
-        div.className = "card";
-
-        div.innerHTML = `
-            <div>
+        el.innerHTML += `
+            <div class="card">
                 <b>${r.name}</b><br>
-                <small>${r.stream_url || "-"}</small>
-            </div>
-
-            <div>
-                <div class="${cls}">${r.stream_status}</div>
-                <div class="badge">⏱ ${r.response_time_ms ?? "-"} ms</div>
+                <span class="${cls}">${r.stream_status}</span><br>
+                ⏱ ${r.response_time_ms ?? "-"} ms
             </div>
         `;
+    });
+}
 
-        list.appendChild(div);
+async function loadHistory() {
+    const res = await fetch(HISTORY);
+    const data = await res.json();
+
+    const labels = data.map(d => new Date(d.time).toLocaleTimeString());
+    const ok = data.map(d => d.ok);
+    const bad = data.map(d => d.broken);
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(document.getElementById("chart"), {
+        type: "line",
+        data: {
+            labels,
+            datasets: [
+                { label: "OK", data: ok, borderColor: "#00ff88" },
+                { label: "BROKEN", data: bad, borderColor: "#ff4d4d" }
+            ]
+        }
     });
 }
 
 load();
-setInterval(load, 5000);
+loadHistory();
+
+setInterval(() => {
+    load();
+    loadHistory();
+}, 5000);
 </script>
 
 </body>
