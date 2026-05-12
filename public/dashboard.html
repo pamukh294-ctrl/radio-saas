@@ -7,101 +7,40 @@
 <style>
 body{
   margin:0;
-  background: linear-gradient(180deg,#0b0b10,#0f0f1a);
+  background:#0b0b10;
   color:white;
   font-family:Arial;
 }
 
-.topbar{
-  display:flex;
-  justify-content:space-between;
-  padding:16px 20px;
-}
-
-.logo{
-  font-size:22px;
+.top{
+  padding:15px;
+  font-size:20px;
   font-weight:bold;
-}
-
-.logo span{ color:#a855f7; }
-
-.tabs{
-  display:flex;
-  justify-content:space-around;
-  background:#0f0f15;
-  padding:10px;
-}
-
-.tab{
-  cursor:pointer;
-  padding:8px 12px;
-}
-
-.tab.active{
-  color:#a855f7;
-  font-weight:bold;
-}
-
-.categories{
-  display:flex;
-  overflow-x:auto;
-  gap:10px;
-  padding:10px 15px;
 }
 
 .cat{
+  display:inline-block;
+  padding:8px 14px;
   background:#1c1c25;
-  padding:10px 16px;
+  margin:5px;
   border-radius:20px;
   cursor:pointer;
 }
 
-.cat.active{
-  background:#a855f7;
-}
-
-.list{
-  padding:10px 15px;
-}
-
 .card{
-  background: rgba(255,255,255,0.04);
-  margin:10px auto;
-  width:320px;
-  padding:14px;
-  border-radius:16px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  background:#1a1a22;
+  margin:10px;
+  padding:12px;
+  border-radius:12px;
   cursor:pointer;
-}
-
-.card:hover{
-  background: rgba(255,255,255,0.07);
-}
-
-.name{
-  font-weight:bold;
-}
-
-.status{
-  font-size:12px;
-  color:#aaa;
-}
-
-.heart{
-  cursor:pointer;
-  font-size:18px;
 }
 
 .player{
   position:fixed;
-  bottom:60px;
-  left:10px;
-  right:10px;
-  background:rgba(20,20,30,0.9);
+  bottom:0;
+  width:100%;
+  background:#111;
   padding:10px;
-  border-radius:16px;
 }
 </style>
 
@@ -109,134 +48,52 @@ body{
 
 <body>
 
-<!-- TOP -->
-<div class="topbar">
-  <div class="logo">Frekans<span>ım</span></div>
-</div>
+<div class="top">🎧 Frekansım</div>
 
-<!-- TABS -->
-<div class="tabs">
-  <div class="tab active" id="tab_radio" onclick="setView('radio')">📻 Radyo</div>
-  <div class="tab" id="tab_fav" onclick="setView('fav')">❤️ Favori</div>
-</div>
+<div id="cats"></div>
+<div id="list"></div>
 
-<!-- CATEGORY -->
-<div class="categories" id="cats"></div>
-
-<!-- LIST -->
-<div class="list" id="list"></div>
-
-<!-- PLAYER -->
 <div class="player">
   <audio id="audio" controls style="width:100%"></audio>
 </div>
 
 <script>
 
-let dataStore = {};
-let view = "radio";
-let selectedCat = "All";
-let favorites = JSON.parse(localStorage.getItem("fav") || "[]");
-
-/* ================= NORMALIZE (EN ÖNEMLİ FIX) ================= */
-function normalize(r){
-  return {
-    name: r.name,
-    url: r.url,
-    status: r.status || "fav"
-  };
-}
+let data = {};
+let currentCat = "All";
 
 /* ================= LOAD ================= */
 async function load(){
-  const res = await fetch("/api/radio");
-  const data = await res.json();
 
-  dataStore = data.radios;
+  const res = await fetch("/api/radio");
+  const json = await res.json();
+
+  data = json.radios;
 
   renderCats();
   renderList();
 }
 
-/* ================= VIEW ================= */
-function setView(v){
-  view = v;
-
-  document.getElementById("tab_radio").classList.remove("active");
-  document.getElementById("tab_fav").classList.remove("active");
-
-  if(v === "radio"){
-    document.getElementById("tab_radio").classList.add("active");
-  } else {
-    document.getElementById("tab_fav").classList.add("active");
-  }
-
-  renderList();
-}
-
-/* ================= CATEGORY ================= */
+/* ================= CATEGORIES ================= */
 function renderCats(){
-  const cats = ["All", ...Object.keys(dataStore)];
+
+  const cats = ["All", ...Object.keys(data)];
 
   const el = document.getElementById("cats");
   el.innerHTML = "";
 
   cats.forEach(c=>{
-    const div = document.createElement("div");
-    div.className = "cat" + (c===selectedCat?" active":"");
-    div.innerText = c;
+    const d = document.createElement("div");
+    d.className = "cat";
+    d.innerText = c;
 
-    div.onclick = ()=>{
-      selectedCat = c;
-      renderCats();
+    d.onclick = ()=>{
+      currentCat = c;
       renderList();
     };
 
-    el.appendChild(div);
+    el.appendChild(d);
   });
-}
-
-/* ================= PLAY (FIXED) ================= */
-function play(r){
-
-  if(!r || !r.url){
-    alert("⚠️ Radyo verisi hatalı");
-    return;
-  }
-
-  if(r.status === "broken"){
-    alert("⚠️ Bu radyo çalışmıyor");
-    return;
-  }
-
-  const audio = document.getElementById("audio");
-
-  audio.pause();
-  audio.src = r.url;
-  audio.load();
-
-  audio.play().catch(()=>{
-    alert("▶️ Tekrar tıkla");
-  });
-}
-
-/* ================= FAVORİ ================= */
-function toggleFav(e, r){
-  e.stopPropagation();
-
-  const clean = normalize(r);
-
-  const exists = favorites.find(f => f.name === clean.name);
-
-  if(!exists){
-    favorites.push(clean);
-  } else {
-    favorites = favorites.filter(f => f.name !== clean.name);
-  }
-
-  localStorage.setItem("fav", JSON.stringify(favorites));
-
-  renderList();
 }
 
 /* ================= LIST ================= */
@@ -247,48 +104,35 @@ function renderList(){
 
   let radios = [];
 
-  if(view === "fav"){
-    radios = favorites.map(normalize);
+  if(currentCat === "All"){
+    Object.keys(data).forEach(k=>{
+      radios = radios.concat(data[k]);
+    });
   } else {
-
-    if(selectedCat === "All"){
-      Object.keys(dataStore).forEach(k=>{
-        radios = radios.concat(dataStore[k]);
-      });
-    } else {
-      radios = dataStore[selectedCat] || [];
-    }
-
+    radios = data[currentCat] || [];
   }
 
   radios.forEach(r=>{
-
-    const clean = normalize(r);
-
-    const isFav = favorites.find(f => f.name === clean.name);
 
     const div = document.createElement("div");
     div.className = "card";
 
     div.innerHTML = `
-      <div>
-        <div class="name">${clean.name}</div>
-        <div class="status">${clean.status}</div>
-      </div>
-
-      <div class="heart">
-        ${isFav ? "💜" : "🤍"}
-      </div>
+      <b>${r.name}</b><br>
+      ${r.cat}
     `;
 
-    div.onclick = ()=>play(clean);
-
-    div.querySelector(".heart").onclick = (e)=>{
-      toggleFav(e, clean);
-    };
+    div.onclick = ()=>play(r);
 
     list.appendChild(div);
   });
+}
+
+/* ================= PLAY ================= */
+function play(r){
+  const audio = document.getElementById("audio");
+  audio.src = r.url;
+  audio.play();
 }
 
 load();

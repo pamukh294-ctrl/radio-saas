@@ -5,9 +5,9 @@ app.use(express.json());
 app.use(express.static("public"));
 
 /* =========================
-   SENİN MEVCUT 50+ LİSTEN BURAYA KALIR
+   RADYO LİSTESİ (SABİT)
 ========================= */
-let radios = [
+const radios = [
   { name: "Radio Paradise", url: "https://stream-uk1.radioparadise.com/mp3-192", cat: "Pop" },
   { name: "BBC Radio 1", url: "http://stream.live.vc.bbcmedia.co.uk/bbc_radio_one", cat: "Pop" },
   { name: "Capital FM", url: "http://media-ice.musicradio.com/CapitalMP3", cat: "Pop" },
@@ -17,13 +17,11 @@ let radios = [
 
   { name: "BBC World", url: "http://stream.live.vc.bbcmedia.co.uk/bbc_radio_fourfm", cat: "News" },
 
-  { name: "TRT FM", url: "http://trtfm.canlitv.com/stream", cat: "TR" },
-
-  /* 🔥 BURAYA SENİN EKLEDİKLERİN KALACAK (SİLME YOK) */
+  { name: "TRT FM", url: "http://trtfm.canlitv.com/stream", cat: "TR" }
 ];
 
 /* =========================
-   API - SADECE GRUPLAR
+   TEK API
 ========================= */
 app.get("/api/radio", (req, res) => {
 
@@ -31,25 +29,18 @@ app.get("/api/radio", (req, res) => {
 
   radios.forEach(r => {
     if (!grouped[r.cat]) grouped[r.cat] = [];
-    grouped[r.cat].push({
-      name: r.name,
-      url: r.url,
-      cat: r.cat,
-      status: "ok"
-    });
+    grouped[r.cat].push(r);
   });
 
   res.json({
-    stats: {
-      total: radios.length,
-      ok: radios.length,
-      broken: 0
-    },
     radios: grouped
   });
 });
 
+/* =========================
+   START
+========================= */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log("RADIO SAAS SAFE MODE RUNNING");
+  console.log("RADIO SAAS RUNNING:", PORT);
 });
